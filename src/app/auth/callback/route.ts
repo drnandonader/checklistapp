@@ -1,30 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 
-// O Supabase redireciona para esta rota depois que o usuário clica
-// no Magic Link recebido por e-mail, com um "code" de troca na URL.
-// Aqui trocamos esse código por uma sessão válida (cookies httpOnly).
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/'
 
   if (code) {
-    const cookieStore = cookies()
+    const response = NextResponse.redirect(new URL(next, origin))
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           get(name: string) {
-            return cookieStore.get(name)?.value
+            return request.cookies.get(name)?.value
           },
           set(name: string, value: string, options: Record<string, unknown>) {
-            cookieStore.set(name, value, options)
+            response.cookies.set(name, value, options)
           },
           remove(name: string, options: Record<string, unknown>) {
-            cookieStore.set(name, '', { ...options, maxAge: 0 })
+            response.cookies.set(name, '', { ...options, maxAge: 0 })
           },
         },
       }
@@ -32,9 +29,9 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      return response
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+  return NextResponse.redirect(new URL('/login?error=auth_failed', origin))
 }
