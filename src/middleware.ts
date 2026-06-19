@@ -30,7 +30,7 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
   const isPublicRoute = pathname === '/login' || pathname.startsWith('/auth/')
-  const isPublicApi = pathname === '/api/auth/magic-link'
+  const isPublicApi = pathname === '/api/auth/magic-link' || pathname === '/api/auth/generate-link'
 
   if (!user && !isPublicRoute && !isPublicApi) {
     if (pathname.startsWith('/api/')) {
