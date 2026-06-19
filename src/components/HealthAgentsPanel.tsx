@@ -110,9 +110,9 @@ export function HealthAgentsPanel({ canManageAgents }: HealthAgentsPanelProps) {
       {view !== 'agents' && (
         <button
           onClick={goBack}
-          className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline"
+          className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium active:text-blue-800 py-2"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-5 h-5" />
           {view === 'medications' ? `Voltar para ${selectedAgent?.name}` : 'Voltar para Agentes'}
         </button>
       )}
@@ -201,12 +201,12 @@ export function HealthAgentsPanel({ canManageAgents }: HealthAgentsPanelProps) {
                     {canManageAgents && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleRemoveAgent(agent.id) }}
-                        className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="text-gray-300 hover:text-red-500 active:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     )}
-                    <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />
+                    <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600" />
                   </div>
                 </div>
               ))}
@@ -390,14 +390,14 @@ function PatientsListView({
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRemove(p.id) }}
-                    className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="text-gray-300 hover:text-red-500 active:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
-                  <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />
+                  <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600" />
                 </div>
               </div>
             )
@@ -466,23 +466,23 @@ function MedicationsView({ patient }: { patient: AgentPatient }) {
         </p>
       )}
 
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800 mb-4">
+      <div className="flex border-b border-gray-200 dark:border-gray-800 mb-4">
         <button
           onClick={() => setSection('meds')}
-          className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors flex items-center gap-1.5 ${
+          className={`flex-1 text-sm font-medium py-3 border-b-2 transition-colors flex items-center justify-center gap-2 ${
             section === 'meds' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
           }`}
         >
-          <Pill className="w-3.5 h-3.5" />
+          <Pill className="w-4 h-4" />
           Medicações
         </button>
         <button
           onClick={() => setSection('obs')}
-          className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors flex items-center gap-1.5 ${
+          className={`flex-1 text-sm font-medium py-3 border-b-2 transition-colors flex items-center justify-center gap-2 ${
             section === 'obs' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
           }`}
         >
-          <ClipboardList className="w-3.5 h-3.5" />
+          <ClipboardList className="w-4 h-4" />
           Observações
         </button>
       </div>
@@ -566,20 +566,20 @@ function MedicationsView({ patient }: { patient: AgentPatient }) {
                         {med.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">📝 {med.notes}</p>}
                       </div>
 
-                      <div className="flex items-center gap-1 flex-shrink-0">
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
                         <button
                           onClick={() => setEditingId(med.id)}
-                          className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5"
+                          className="text-gray-400 hover:text-blue-600 active:text-blue-600 dark:hover:text-blue-400 p-2.5"
                           title="Editar"
                         >
-                          <Pencil className="w-3.5 h-3.5" />
+                          <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleRemove(med.id)}
-                          className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 p-1.5"
+                          className="text-gray-400 hover:text-red-500 active:text-red-500 dark:hover:text-red-400 p-2.5"
                           title="Remover"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -721,7 +721,7 @@ function ObservationsSection({ patientId }: { patientId: string }) {
                   </div>
                   <button
                     onClick={() => handleRemove(obs.id)}
-                    className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    className="text-gray-300 hover:text-red-500 active:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
                     title="Remover"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -761,7 +761,7 @@ function ObservationsSection({ patientId }: { patientId: string }) {
                       </div>
                       <button
                         onClick={() => handleRemove(obs.id)}
-                        className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                        className="text-gray-300 hover:text-red-500 active:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
                         title="Remover"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

@@ -204,10 +204,10 @@ export default function HomePage() {
             <CoordinationPanel month={selectedMonth} year={selectedYear} />
           ) : (
             <div className="space-y-4">
-              <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800 flex-wrap">
+              <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800 overflow-x-auto -mx-4 px-4 scrollbar-hide">
                 <button
                   onClick={() => setSubTab('visitas')}
-                  className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors ${
+                  className={`text-sm font-medium px-3 py-2.5 border-b-2 transition-colors whitespace-nowrap ${
                     subTab === 'visitas' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
                   }`}
                 >
@@ -215,7 +215,7 @@ export default function HomePage() {
                 </button>
                 <button
                   onClick={() => setSubTab('checklist')}
-                  className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors ${
+                  className={`text-sm font-medium px-3 py-2.5 border-b-2 transition-colors whitespace-nowrap ${
                     subTab === 'checklist' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
                   }`}
                 >
@@ -223,7 +223,7 @@ export default function HomePage() {
                 </button>
                 <button
                   onClick={() => setSubTab('faltosos')}
-                  className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors ${
+                  className={`text-sm font-medium px-3 py-2.5 border-b-2 transition-colors whitespace-nowrap ${
                     subTab === 'faltosos' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
                   }`}
                 >
@@ -231,7 +231,7 @@ export default function HomePage() {
                 </button>
                 <button
                   onClick={() => setSubTab('agentes')}
-                  className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors ${
+                  className={`text-sm font-medium px-3 py-2.5 border-b-2 transition-colors whitespace-nowrap ${
                     subTab === 'agentes' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
                   }`}
                 >
@@ -239,7 +239,7 @@ export default function HomePage() {
                 </button>
                 <button
                   onClick={() => setSubTab('mural')}
-                  className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors ${
+                  className={`text-sm font-medium px-3 py-2.5 border-b-2 transition-colors whitespace-nowrap ${
                     subTab === 'mural' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
                   }`}
                 >

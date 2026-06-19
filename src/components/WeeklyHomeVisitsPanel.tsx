@@ -119,7 +119,7 @@ export function WeeklyHomeVisitsPanel() {
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-blue-500" /></div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
           {[1, 2, 3, 4].map((slot) => {
             const visit = visits.find((item) => item.slot_number === slot)
             const editing = editingSlot === slot
@@ -128,34 +128,34 @@ export function WeeklyHomeVisitsPanel() {
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wide text-gray-400">Visita {slot}</span>
                   {visit && !editing && (
-                    <div className="flex gap-1">
-                      <button onClick={() => startEditing(slot)} className="p-1.5 text-gray-400 hover:text-blue-600" title="Editar">
-                        <Pencil className="h-3.5 w-3.5" />
+                    <div className="flex gap-0.5">
+                      <button onClick={() => startEditing(slot)} className="p-2.5 text-gray-400 hover:text-blue-600 active:text-blue-600" title="Editar">
+                        <Pencil className="h-4 w-4" />
                       </button>
-                      <button onClick={() => remove(slot)} className="p-1.5 text-gray-400 hover:text-red-600" title="Liberar vaga">
-                        <Trash2 className="h-3.5 w-3.5" />
+                      <button onClick={() => remove(slot)} className="p-2.5 text-gray-400 hover:text-red-600 active:text-red-600" title="Liberar vaga">
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   )}
                 </div>
 
                 {editing ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <input value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Nome do paciente" autoFocus
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300" />
                     <select value={agentId} onChange={(e) => setAgentId(e.target.value)}
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800">
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300">
                       <option value="">Agente responsável</option>
                       {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
                     </select>
                     <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observação ou endereço (opcional)"
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300" />
                     <div className="flex gap-2">
                       <button onClick={save} disabled={saving || !patientName.trim() || !agentId}
-                        className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white disabled:opacity-50">
-                        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Salvar
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white disabled:opacity-50 active:bg-blue-700">
+                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Salvar
                       </button>
-                      <button onClick={cancelEditing} className="rounded-lg border border-gray-200 px-3 dark:border-gray-700"><X className="h-4 w-4" /></button>
+                      <button onClick={cancelEditing} className="rounded-lg border border-gray-200 px-4 dark:border-gray-700 active:bg-gray-100 dark:active:bg-gray-800"><X className="h-4 w-4" /></button>
                     </div>
                   </div>
                 ) : visit ? (
@@ -166,7 +166,7 @@ export function WeeklyHomeVisitsPanel() {
                   </div>
                 ) : (
                   <button onClick={() => startEditing(slot)}
-                    className="flex min-h-24 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-200 text-sm text-gray-400 hover:border-emerald-300 hover:text-emerald-600 dark:border-gray-700">
+                    className="flex min-h-20 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-200 text-sm text-gray-400 hover:border-emerald-300 hover:text-emerald-600 active:border-emerald-400 active:text-emerald-700 dark:border-gray-700">
                     + Agendar visita
                   </button>
                 )}
