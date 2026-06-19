@@ -30,9 +30,12 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
   const isPublicRoute = pathname === '/login' || pathname.startsWith('/auth/')
-  const isApiRoute = pathname.startsWith('/api/')
+  const isPublicApi = pathname === '/api/auth/magic-link'
 
-  if (!user && !isPublicRoute && !isApiRoute) {
+  if (!user && !isPublicRoute && !isPublicApi) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/login'
     return NextResponse.redirect(loginUrl)

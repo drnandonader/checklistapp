@@ -3,16 +3,20 @@ import { getSupabaseAdmin, DEFAULT_UBS_ID } from '@/lib/supabaseAdmin'
 import { sendReminderEmail, buildReminderEmailHtml } from '@/lib/email'
 import { getItemsByProfessional } from '@/data/checklist'
 import { ProfessionalCategory } from '@/types'
+import { timingSafeEqual } from 'crypto'
 
 const ALL_PROFESSIONALS: ProfessionalCategory[] = ['medico', 'enfermeira', 'tecnico', 'acs']
 
-// GET /api/cron/weekly-reminders
-// Chamado automaticamente pelo Vercel Cron (configurado em vercel.json).
-// Protegido pelo header Authorization que a própria Vercel injeta
-// quando o CRON_SECRET está configurado nas variáveis de ambiente.
+function verifyCronSecret(header: string | null): boolean {
+  const secret = process.env.CRON_SECRET
+  if (!secret || !header) return false
+  const expected = `Bearer ${secret}`
+  if (expected.length !== header.length) return false
+  return timingSafeEqual(Buffer.from(expected), Buffer.from(header))
+}
+
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyCronSecret(req.headers.get('authorization'))) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 

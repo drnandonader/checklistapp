@@ -37,8 +37,8 @@ export default function AuthCallbackPage() {
         if (error) throw error
       }
 
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error || !session) throw error ?? new Error('Sessão não encontrada')
+      const { data: { user: verifiedUser }, error } = await supabase.auth.getUser()
+      if (error || !verifiedUser) throw error ?? new Error('Sessão não encontrada')
 
       if (!cancelled) router.replace('/')
     }

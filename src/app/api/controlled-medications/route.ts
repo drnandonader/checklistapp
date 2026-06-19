@@ -2,11 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
-// GET /api/controlled-medications?patient_id=xxx — lista medicações de um paciente
+const ALLOWED_ROLES = ['acs', 'medico', 'coordenacao']
+
+async function checkRole(userId: string) {
+  const admin = getSupabaseAdmin()
+  const { data } = await admin
+    .from('profiles')
+    .select('professional, active')
+    .eq('id', userId)
+    .maybeSingle()
+  if (!data?.active || !ALLOWED_ROLES.includes(data.professional)) return null
+  return data
+}
+
 export async function GET(req: NextRequest) {
   const supabase = createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+  if (!(await checkRole(user.id))) {
+    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+  }
 
   const { searchParams } = new URL(req.url)
   const patientId = searchParams.get('patient_id')
@@ -20,69 +36,70 @@ export async function GET(req: NextRequest) {
     .eq('active', true)
     .order('created_at', { ascending: true })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: 'Erro ao carregar medicações' }, { status: 500 })
 
   return NextResponse.json({ medications: data || [] })
 }
 
-// POST /api/controlled-medications — cadastra uma medicação controlada
 export async function POST(req: NextRequest) {
   const supabase = createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
+  if (!(await checkRole(user.id))) {
+    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+  }
+
   try {
-    const admin = getSupabaseAdmin()
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('professional, active')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (!profile?.active || !['acs', 'medico', 'coordenacao'].includes(profile.professional)) {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
-    }
-
     const body = await req.json()
     const {
       patient_id, name, dosage, posology, med_class,
       prescription_end_date, duration_days, last_renewed_at, notes,
     } = body
 
-    if (!patient_id || !name || !name.trim()) {
+    if (!patient_id || !name || typeof name !== 'string' || !name.trim()) {
       return NextResponse.json({ error: 'Parâmetros inválidos' }, { status: 400 })
     }
+    if (name.length > 200) {
+      return NextResponse.json({ error: 'Nome muito longo' }, { status: 400 })
+    }
 
+    const validClasses = ['psicotropico', 'antipsicotico', 'opioide', 'anticonvulsivante', 'outro_controlado']
+    const safeMedClass = validClasses.includes(med_class) ? med_class : 'outro_controlado'
+
+    const admin = getSupabaseAdmin()
     const { data, error } = await admin
       .from('controlled_medications')
       .insert({
         patient_id,
-        name: name.trim(),
-        dosage: dosage || '',
-        posology: posology || '',
-        med_class: med_class || 'outro_controlado',
+        name: name.trim().slice(0, 200),
+        dosage: (dosage || '').slice(0, 100),
+        posology: (posology || '').slice(0, 200),
+        med_class: safeMedClass,
         prescription_end_date: prescription_end_date || null,
         duration_days: duration_days || null,
         last_renewed_at: last_renewed_at || null,
-        notes: notes || '',
+        notes: (notes || '').slice(0, 1000),
       })
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: 'Erro ao cadastrar medicação' }, { status: 500 })
 
     return NextResponse.json({ success: true, medication: data })
-  } catch (err) {
-    console.error('[controlled-medications POST]', err)
+  } catch {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
 
-// PATCH /api/controlled-medications — edita uma medicação (incl. renovar receita)
 export async function PATCH(req: NextRequest) {
   const supabase = createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+  if (!(await checkRole(user.id))) {
+    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+  }
 
   try {
     const body = await req.json()
@@ -100,20 +117,22 @@ export async function PATCH(req: NextRequest) {
 
     const admin = getSupabaseAdmin()
     const { error } = await admin.from('controlled_medications').update(updates).eq('id', id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: 'Erro ao atualizar' }, { status: 500 })
 
     return NextResponse.json({ success: true })
-  } catch (err) {
-    console.error('[controlled-medications PATCH]', err)
+  } catch {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
 
-// DELETE /api/controlled-medications?id=xxx — remove (soft delete) uma medicação
 export async function DELETE(req: NextRequest) {
   const supabase = createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+  if (!(await checkRole(user.id))) {
+    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+  }
 
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
@@ -125,7 +144,7 @@ export async function DELETE(req: NextRequest) {
     .update({ active: false })
     .eq('id', id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: 'Erro ao remover' }, { status: 500 })
 
   return NextResponse.json({ success: true })
 }

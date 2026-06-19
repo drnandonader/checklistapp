@@ -3,6 +3,15 @@ import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { getSupabaseAdmin, DEFAULT_UBS_ID } from '@/lib/supabaseAdmin'
 import { sendReminderEmail } from '@/lib/email'
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
+
 // POST /api/notifications/critical-alert
 // Usado pela coordenação para disparar um aviso imediato por e-mail
 // a uma categoria profissional específica.
@@ -23,8 +32,17 @@ export async function POST(req: NextRequest) {
 
   try {
     const { professional, message } = await req.json()
-    if (!professional || !message) {
+    if (!professional || !message || typeof message !== 'string') {
       return NextResponse.json({ error: 'Parâmetros inválidos' }, { status: 400 })
+    }
+
+    const validProfessionals = ['medico', 'enfermeira', 'tecnico', 'acs', 'coordenacao']
+    if (!validProfessionals.includes(professional)) {
+      return NextResponse.json({ error: 'Categoria inválida' }, { status: 400 })
+    }
+
+    if (message.length > 2000) {
+      return NextResponse.json({ error: 'Mensagem muito longa' }, { status: 400 })
     }
 
     // Usa o cliente admin pois precisa ler e-mails de outros perfis
@@ -40,7 +58,7 @@ export async function POST(req: NextRequest) {
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
         <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px;">
           <h2 style="color: #b91c1c; font-size: 16px; margin: 0 0 8px;">⚠️ Alerta da Coordenação</h2>
-          <p style="font-size: 14px; color: #1f2937; line-height: 1.5;">${message}</p>
+          <p style="font-size: 14px; color: #1f2937; line-height: 1.5;">${escapeHtml(message)}</p>
         </div>
         <p style="font-size: 11px; color: #9ca3af; margin-top: 16px;">
           Checklist Boa Vista II — mensagem enviada pela coordenação da UBS.

@@ -13,7 +13,8 @@ export async function GET(request: NextRequest) {
     | 'email_change'
     | 'email'
     | null
-  const next = searchParams.get('next') ?? '/'
+  const rawNext = searchParams.get('next') ?? '/'
+  const next = (rawNext.startsWith('/') && !rawNext.startsWith('//')) ? rawNext : '/'
 
   const redirectTo = request.nextUrl.clone()
   redirectTo.pathname = next
