@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createSupabaseBrowserClient } from '@/lib/supabaseClient'
 import { ClipboardList, Mail, Loader2, CheckCircle2 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -24,16 +23,14 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
-    const supabase = createSupabaseBrowserClient()
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+    const response = await fetch('/api/auth/magic-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
     })
 
     setLoading(false)
-    if (error) {
+    if (!response.ok) {
       setError('Não foi possível enviar o link. Verifique o e-mail e tente novamente.')
       return
     }
