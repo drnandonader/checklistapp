@@ -28,13 +28,21 @@ export function HealthAgentsPanel({ canManageAgents }: HealthAgentsPanelProps) {
   const [newAgentName, setNewAgentName] = useState('')
   const [addingAgent, setAddingAgent] = useState(false)
   const [showAddAgent, setShowAddAgent] = useState(false)
+  const [agentError, setAgentError] = useState<string | null>(null)
 
   const loadAgents = useCallback(async () => {
     setLoadingAgents(true)
-    const res = await fetch('/api/health-agents')
-    if (res.ok) {
+    setAgentError(null)
+    try {
+      const res = await fetch('/api/health-agents')
       const data = await res.json()
-      setAgents(data.agents || [])
+      if (!res.ok) {
+        setAgentError(data.error || 'Não foi possível carregar os agentes.')
+      } else {
+        setAgents(data.agents || [])
+      }
+    } catch {
+      setAgentError('Falha de conexão ao carregar os agentes.')
     }
     setLoadingAgents(false)
   }, [])
@@ -43,17 +51,26 @@ export function HealthAgentsPanel({ canManageAgents }: HealthAgentsPanelProps) {
 
   async function handleAddAgent() {
     if (!newAgentName.trim()) return
+    setAgentError(null)
     setAddingAgent(true)
-    const res = await fetch('/api/health-agents', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newAgentName.trim() }),
-    })
-    setAddingAgent(false)
-    if (res.ok) {
+    try {
+      const res = await fetch('/api/health-agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newAgentName.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setAgentError(data.error || 'Não foi possível cadastrar o agente.')
+        return
+      }
       setNewAgentName('')
       setShowAddAgent(false)
       await loadAgents()
+    } catch {
+      setAgentError('Falha de conexão ao cadastrar o agente.')
+    } finally {
+      setAddingAgent(false)
     }
   }
 
@@ -144,6 +161,12 @@ export function HealthAgentsPanel({ canManageAgents }: HealthAgentsPanelProps) {
                   <X className="w-4 h-4" />
                 </button>
               </div>
+            </div>
+          )}
+
+          {agentError && (
+            <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+              {agentError}
             </div>
           )}
 
