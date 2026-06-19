@@ -11,17 +11,26 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
 
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        router.replace('/')
+      }
+    })
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
         router.replace('/')
       }
     })
 
     const timeout = setTimeout(() => {
       router.replace('/login?error=auth_failed')
-    }, 5000)
+    }, 10000)
 
-    return () => clearTimeout(timeout)
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, [router])
 
   return (

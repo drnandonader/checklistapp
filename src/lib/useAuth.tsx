@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   const refresh = useCallback(async () => {
+    setLoading(true)
     const supabase = createSupabaseBrowserClient()
     const { data: { user } } = await supabase.auth.getUser()
 
