@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabaseClient'
 import { ClipboardList, Mail, Loader2, CheckCircle2 } from 'lucide-react'
 
@@ -9,6 +9,15 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const authError = new URLSearchParams(window.location.search).get('error')
+    if (authError === 'auth_timeout') {
+      setError('O link demorou demais para ser validado. Solicite um novo link e tente novamente.')
+    } else if (authError) {
+      setError('O link é inválido, expirou ou já foi utilizado. Solicite um novo link.')
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

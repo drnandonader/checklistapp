@@ -43,7 +43,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', user.id)
       .maybeSingle()
 
-    setProfile(data as AuthProfile | null)
+    if (data) {
+      setProfile(data as AuthProfile)
+      setLoading(false)
+      return
+    }
+
+    // Repara usuários que foram criados no Auth antes de serem incluídos
+    // em pending_team_members (o trigger de INSERT não roda novamente).
+    const provisionResponse = await fetch('/api/auth/profile', { method: 'POST' })
+    if (provisionResponse.ok) {
+      const provisionedProfile = await provisionResponse.json()
+      setProfile(provisionedProfile as AuthProfile)
+    } else {
+      setProfile(null)
+    }
     setLoading(false)
   }, [])
 
@@ -52,7 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const supabase = createSupabaseBrowserClient()
     const { data: listener } = supabase.auth.onAuthStateChange(() => {
-      refresh()
+      // Evita chamar outro método do Auth dentro do lock do callback.
+      setTimeout(() => void refresh(), 0)
     })
 
     return () => listener.subscription.unsubscribe()

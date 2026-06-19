@@ -10,26 +10,50 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
+    let cancelled = false
+    let timeout: ReturnType<typeof setTimeout> | undefined
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        router.replace('/')
+    async function finishSignIn() {
+      const hashParams = new URLSearchParams(window.location.hash.slice(1))
+      const queryParams = new URLSearchParams(window.location.search)
+      const authError = hashParams.get('error_description') ?? queryParams.get('error_description')
+
+      if (authError) {
+        throw new Error(authError)
       }
+
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
+      const code = queryParams.get('code')
+
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        })
+        if (error) throw error
+      } else if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) throw error
+      }
+
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error || !session) throw error ?? new Error('Sessão não encontrada')
+
+      if (!cancelled) router.replace('/')
+    }
+
+    finishSignIn().catch(() => {
+      if (!cancelled) router.replace('/login?error=auth_failed')
     })
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.replace('/')
-      }
-    })
-
-    const timeout = setTimeout(() => {
-      router.replace('/login?error=auth_failed')
-    }, 10000)
+    timeout = setTimeout(() => {
+      if (!cancelled) router.replace('/login?error=auth_timeout')
+    }, 15000)
 
     return () => {
-      subscription.unsubscribe()
-      clearTimeout(timeout)
+      cancelled = true
+      if (timeout) clearTimeout(timeout)
     }
   }, [router])
 

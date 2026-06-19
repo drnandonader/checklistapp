@@ -145,6 +145,8 @@ A migration já insere 5 registros de exemplo na tabela `pending_team_members` c
 2. Em **Site URL**, coloque a URL do seu site (ex: `https://checklist-boavista2.vercel.app`)
 3. Em **Redirect URLs**, adicione: `https://checklist-boavista2.vercel.app/auth/callback`
    (troque pelo seu domínio real; pode adicionar `http://localhost:3000/auth/callback` também, para testar localmente)
+4. Em **Authentication** → **Email Templates** → **Magic Link**, mantenha o botão usando
+   `{{ .ConfirmationURL }}`. Esse link confirma o token no Supabase e retorna para `/auth/callback`.
 
 ### 5. Copie as chaves de API
 
