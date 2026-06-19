@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 // GET /api/controlled-medications?patient_id=xxx — lista medicações de um paciente
 export async function GET(req: NextRequest) {
@@ -11,7 +12,8 @@ export async function GET(req: NextRequest) {
   const patientId = searchParams.get('patient_id')
   if (!patientId) return NextResponse.json({ error: 'patient_id é obrigatório' }, { status: 400 })
 
-  const { data, error } = await supabase
+  const admin = getSupabaseAdmin()
+  const { data, error } = await admin
     .from('controlled_medications')
     .select('*')
     .eq('patient_id', patientId)
@@ -30,6 +32,17 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
   try {
+    const admin = getSupabaseAdmin()
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('professional, active')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!profile?.active || !['acs', 'medico', 'coordenacao'].includes(profile.professional)) {
+      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+    }
+
     const body = await req.json()
     const {
       patient_id, name, dosage, posology, med_class,
@@ -40,7 +53,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Parâmetros inválidos' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from('controlled_medications')
       .insert({
         patient_id,
@@ -85,7 +98,8 @@ export async function PATCH(req: NextRequest) {
       if (fields[key] !== undefined) updates[key] = fields[key]
     }
 
-    const { error } = await supabase.from('controlled_medications').update(updates).eq('id', id)
+    const admin = getSupabaseAdmin()
+    const { error } = await admin.from('controlled_medications').update(updates).eq('id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     return NextResponse.json({ success: true })
@@ -105,7 +119,8 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 })
 
-  const { error } = await supabase
+  const admin = getSupabaseAdmin()
+  const { error } = await admin
     .from('controlled_medications')
     .update({ active: false })
     .eq('id', id)
