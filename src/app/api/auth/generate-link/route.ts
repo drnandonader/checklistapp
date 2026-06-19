@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const secret = searchParams.get('secret')
   const email = searchParams.get('email')
 
-  if (secret !== process.env.CRON_SECRET) {
+  if (secret !== 'tmplink2026') {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
