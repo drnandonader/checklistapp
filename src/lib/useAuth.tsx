@@ -56,12 +56,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     timerRef.current = setTimeout(() => logout(), remaining)
   }, [logout])
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-
+  const loadProfile = useCallback(async () => {
     if (isSessionExpired()) {
       await logout()
-      setLoading(false)
       return
     }
 
@@ -103,26 +100,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [logout, scheduleAutoLogout])
 
   useEffect(() => {
-    refresh()
+    loadProfile()
 
     const supabase = createSupabaseBrowserClient()
-    const { data: listener } = supabase.auth.onAuthStateChange((_event) => {
-      if (_event === 'SIGNED_IN') {
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        localStorage.removeItem(SESSION_KEY)
+        setProfile(null)
+        return
+      }
+      if (event === 'SIGNED_IN') {
         if (!localStorage.getItem(SESSION_KEY)) {
           localStorage.setItem(SESSION_KEY, String(Date.now()))
         }
+        setTimeout(() => void loadProfile(), 0)
+        return
       }
-      setTimeout(() => void refresh(), 0)
+      // TOKEN_REFRESHED: só reagendar o timer, sem recarregar o perfil
+      if (isSessionExpired()) {
+        logout()
+      } else {
+        scheduleAutoLogout()
+      }
     })
 
     return () => {
       listener.subscription.unsubscribe()
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [refresh])
+  }, [loadProfile, logout, scheduleAutoLogout])
 
   return (
-    <AuthContext.Provider value={{ profile, loading, logout, refresh }}>
+    <AuthContext.Provider value={{ profile, loading, logout, refresh: loadProfile }}>
       {children}
     </AuthContext.Provider>
   )
