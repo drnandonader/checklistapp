@@ -15,6 +15,7 @@ import { EvolutionChart } from './EvolutionChart'
 import { PrevineScoreboard } from './PrevineScoreboard'
 import { FaltososPanel } from './FaltososPanel'
 import { HealthAgentsPanel } from './HealthAgentsPanel'
+import { WeeklyHomeVisitsPanel } from './WeeklyHomeVisitsPanel'
 import { Download, Loader2, Lock, Mail, CheckCircle2, X } from 'lucide-react'
 
 interface CoordinationPanelProps {
@@ -43,7 +44,7 @@ export function CoordinationPanel({ month, year }: CoordinationPanelProps) {
   const [alertText, setAlertText] = useState('')
   const [sendingAlert, setSendingAlert] = useState(false)
   const [alertResult, setAlertResult] = useState<string | null>(null)
-  const [tab, setTab] = useState<'geral' | 'faltosos' | 'agentes'>('geral')
+  const [tab, setTab] = useState<'geral' | 'visitas' | 'faltosos' | 'agentes'>('geral')
 
   const loadStats = useCallback(async () => {
     setLoading(true)
@@ -156,6 +157,14 @@ export function CoordinationPanel({ month, year }: CoordinationPanelProps) {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800">
         <button
+          onClick={() => setTab('visitas')}
+          className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors ${
+            tab === 'visitas' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          Visitas da Semana
+        </button>
+        <button
           onClick={() => setTab('geral')}
           className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors ${
             tab === 'geral' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
@@ -181,7 +190,9 @@ export function CoordinationPanel({ month, year }: CoordinationPanelProps) {
         </button>
       </div>
 
-      {tab === 'faltosos' ? (
+      {tab === 'visitas' ? (
+        <WeeklyHomeVisitsPanel />
+      ) : tab === 'faltosos' ? (
         <FaltososPanel month={month} year={year} canImport={true} />
       ) : tab === 'agentes' ? (
         <HealthAgentsPanel canManageAgents={true} />

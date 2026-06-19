@@ -280,6 +280,19 @@ export interface HealthAgent {
   created_at: string
 }
 
+export interface WeeklyHomeVisit {
+  id: string
+  ubs_id: string
+  week_start: string
+  visit_date: string
+  slot_number: number
+  patient_name: string
+  agent_id: string
+  agent?: Pick<HealthAgent, 'id' | 'name'>
+  notes?: string
+  updated_at: string
+}
+
 // ─── Pacientes sob cuidado de um Agente de Saúde ─────────────────────────
 export interface AgentPatient {
   id: string
@@ -348,7 +361,7 @@ export const RENEWAL_URGENCY_COLORS: Record<RenewalUrgency, string> = {
 }
 
 // Janela de alerta antes do vencimento (dias) — configurável aqui se precisar ajustar
-export const RENEWAL_ALERT_WINDOW_DAYS = 7
+export const RENEWAL_ALERT_WINDOW_DAYS = 10
 
 // Calcula a data efetiva de vencimento da receita: usa prescription_end_date
 // se disponível; senão, soma duration_days a partir de last_renewed_at;

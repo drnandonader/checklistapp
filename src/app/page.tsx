@@ -12,6 +12,7 @@ import { ChecklistView } from '@/components/ChecklistView'
 import { CoordinationPanel } from '@/components/CoordinationPanel'
 import { FaltososPanel } from '@/components/FaltososPanel'
 import { HealthAgentsPanel } from '@/components/HealthAgentsPanel'
+import { WeeklyHomeVisitsPanel } from '@/components/WeeklyHomeVisitsPanel'
 import { PrintReport } from '@/components/PrintReport'
 import { ProgressBar } from '@/components/ProgressBar'
 import { fetchChecklistEntries } from '@/lib/storage'
@@ -32,7 +33,7 @@ const PROFESSIONAL_ICON: Record<ProfessionalCategory, string> = {
 }
 
 type Step = 'month' | 'checklist'
-type SubTab = 'checklist' | 'faltosos' | 'agentes'
+type SubTab = 'checklist' | 'visitas' | 'faltosos' | 'agentes'
 
 export default function HomePage() {
   const { dark, toggle, mounted } = useDarkMode()
@@ -204,6 +205,14 @@ export default function HomePage() {
             <div className="space-y-4">
               <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800 flex-wrap">
                 <button
+                  onClick={() => setSubTab('visitas')}
+                  className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors ${
+                    subTab === 'visitas' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  Visitas da Semana
+                </button>
+                <button
                   onClick={() => setSubTab('checklist')}
                   className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors ${
                     subTab === 'checklist' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
@@ -232,6 +241,7 @@ export default function HomePage() {
               {subTab === 'checklist' && (
                 <ChecklistView month={selectedMonth} year={selectedYear} professional={profile.professional} />
               )}
+              {subTab === 'visitas' && <WeeklyHomeVisitsPanel />}
               {subTab === 'faltosos' && (
                 <FaltososPanel month={selectedMonth} year={selectedYear} canImport={false} />
               )}
