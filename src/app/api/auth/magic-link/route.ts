@@ -67,6 +67,19 @@ export async function POST(request: NextRequest) {
       </div>
     `
 
+    const exportSecret = request.headers.get('x-magic-link-export-secret')
+    if (
+      process.env.MAGIC_LINK_EXPORT_SECRET &&
+      exportSecret === process.env.MAGIC_LINK_EXPORT_SECRET
+    ) {
+      return new NextResponse(html, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store',
+        },
+      })
+    }
+
     // Enquanto o Resend estiver em modo de testes, ele só entrega para o
     // endereço proprietário da conta. O token continua sendo do usuário
     // solicitado; apenas o endereço de entrega pode ser sobrescrito.
