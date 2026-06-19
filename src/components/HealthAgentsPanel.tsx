@@ -236,6 +236,7 @@ function PatientsListView({
   const [newNotes, setNewNotes] = useState('')
   const [adding, setAdding] = useState(false)
   const [medCounts, setMedCounts] = useState<Record<string, { total: number; urgent: number }>>({})
+  const [obsCounts, setObsCounts] = useState<Record<string, number>>({})
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -245,10 +246,14 @@ function PatientsListView({
       const list: AgentPatient[] = data.patients || []
       setPatients(list)
 
-      const counts: Record<string, { total: number; urgent: number }> = {}
+      const mCounts: Record<string, { total: number; urgent: number }> = {}
+      const oCounts: Record<string, number> = {}
       await Promise.all(
         list.map(async (p) => {
-          const medsRes = await fetch(`/api/controlled-medications?patient_id=${p.id}`)
+          const [medsRes, obsRes] = await Promise.all([
+            fetch(`/api/controlled-medications?patient_id=${p.id}`),
+            fetch(`/api/patient-observations?patient_id=${p.id}`),
+          ])
           if (medsRes.ok) {
             const medsData = await medsRes.json()
             const meds: ControlledMedication[] = medsData.medications || []
@@ -256,11 +261,17 @@ function PatientsListView({
               const { urgency } = computeRenewalUrgency(m)
               return urgency === 'atencao' || urgency === 'vencido'
             }).length
-            counts[p.id] = { total: meds.length, urgent }
+            mCounts[p.id] = { total: meds.length, urgent }
+          }
+          if (obsRes.ok) {
+            const obsData = await obsRes.json()
+            const pending = (obsData.observations || []).filter((o: { resolved: boolean }) => !o.resolved).length
+            oCounts[p.id] = pending
           }
         })
       )
-      setMedCounts(counts)
+      setMedCounts(mCounts)
+      setObsCounts(oCounts)
     }
     setLoading(false)
   }, [agent.id])
@@ -363,13 +374,18 @@ function PatientsListView({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{p.name}</p>
                   {p.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{p.notes}</p>}
-                  <div className="flex items-center gap-2 mt-1.5">
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                       <Pill className="w-3 h-3" /> {counts?.total ?? 0} medicação(ões)
                     </span>
                     {(counts?.urgent ?? 0) > 0 && (
                       <span className="flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400">
                         <AlertTriangle className="w-3 h-3" /> {counts!.urgent} a renovar
+                      </span>
+                    )}
+                    {(obsCounts[p.id] ?? 0) > 0 && (
+                      <span className="flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                        <ClipboardList className="w-3 h-3" /> {obsCounts[p.id]} pendência(s)
                       </span>
                     )}
                   </div>
