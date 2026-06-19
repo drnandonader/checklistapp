@@ -1,11 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Middleware necessário para o Supabase Auth funcionar corretamente
-// com Server Components: ele renova o token de sessão (refresh token)
-// em cada navegação, evitando que o usuário seja deslogado de repente.
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request: { headers: request.headers } })
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,10 +13,14 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: Record<string, unknown>) {
-          response.cookies.set(name, value, options)
+          request.cookies.set(name, value)
+          supabaseResponse = NextResponse.next({ request })
+          supabaseResponse.cookies.set(name, value, options)
         },
         remove(name: string, options: Record<string, unknown>) {
-          response.cookies.set(name, '', { ...options, maxAge: 0 })
+          request.cookies.set(name, '')
+          supabaseResponse = NextResponse.next({ request })
+          supabaseResponse.cookies.set(name, '', { ...options, maxAge: 0 })
         },
       },
     }
@@ -27,7 +28,7 @@ export async function middleware(request: NextRequest) {
 
   await supabase.auth.getUser()
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {
