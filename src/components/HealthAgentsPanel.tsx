@@ -9,7 +9,7 @@ import {
 } from '@/types'
 import {
   Users, UserPlus, Pill, Plus, X, Loader2, ChevronRight, ArrowLeft,
-  Trash2, AlertTriangle, Pencil, Check,
+  Trash2, AlertTriangle, Pencil, Check, ClipboardList, CheckCircle2, Circle,
 } from 'lucide-react'
 
 interface HealthAgentsPanelProps {
@@ -393,6 +393,7 @@ function PatientsListView({
 }
 
 function MedicationsView({ patient }: { patient: AgentPatient }) {
+  const [section, setSection] = useState<'meds' | 'obs'>('meds')
   const [meds, setMeds] = useState<ControlledMedication[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -439,18 +440,9 @@ function MedicationsView({ patient }: { patient: AgentPatient }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-bold text-gray-800 dark:text-white">
-          Medicações de <span className="text-blue-600 dark:text-blue-400">{patient.name}</span>
-        </h2>
-        <button
-          onClick={() => setShowAdd((v) => !v)}
-          className="flex items-center gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Nova medicação
-        </button>
-      </div>
+      <h2 className="text-base font-bold text-gray-800 dark:text-white mb-3">
+        Paciente: <span className="text-blue-600 dark:text-blue-400">{patient.name}</span>
+      </h2>
 
       {patient.notes && (
         <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 mb-3">
@@ -458,101 +450,313 @@ function MedicationsView({ patient }: { patient: AgentPatient }) {
         </p>
       )}
 
-      {showAdd && (
-        <MedicationForm
-          patientId={patient.id}
-          onSaved={() => { setShowAdd(false); load() }}
-          onCancel={() => setShowAdd(false)}
-        />
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800 mb-4">
+        <button
+          onClick={() => setSection('meds')}
+          className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors flex items-center gap-1.5 ${
+            section === 'meds' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          <Pill className="w-3.5 h-3.5" />
+          Medicações
+        </button>
+        <button
+          onClick={() => setSection('obs')}
+          className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors flex items-center gap-1.5 ${
+            section === 'obs' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          <ClipboardList className="w-3.5 h-3.5" />
+          Observações
+        </button>
+      </div>
+
+      {section === 'obs' ? (
+        <ObservationsSection patientId={patient.id} />
+      ) : (
+        <>
+          <div className="flex items-center justify-end mb-3">
+            <button
+              onClick={() => setShowAdd((v) => !v)}
+              className="flex items-center gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Nova medicação
+            </button>
+          </div>
+
+          {showAdd && (
+            <MedicationForm
+              patientId={patient.id}
+              onSaved={() => { setShowAdd(false); load() }}
+              onCancel={() => setShowAdd(false)}
+            />
+          )}
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+            </div>
+          ) : sortedMeds.length === 0 ? (
+            <div className="text-center py-12 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+              <Pill className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma medicação controlada cadastrada ainda.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {sortedMeds.map((med) => {
+                if (editingId === med.id) {
+                  return (
+                    <MedicationForm
+                      key={med.id}
+                      patientId={patient.id}
+                      existing={med}
+                      onSaved={() => { setEditingId(null); load() }}
+                      onCancel={() => setEditingId(null)}
+                    />
+                  )
+                }
+
+                const { urgency, dueDate, daysRemaining } = computeRenewalUrgency(med)
+
+                return (
+                  <div key={med.id} className={`rounded-xl border p-4 ${RENEWAL_URGENCY_COLORS[urgency]}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-bold text-gray-800 dark:text-gray-100">{med.name}</p>
+                          {med.dosage && <span className="text-xs text-gray-500 dark:text-gray-400">{med.dosage}</span>}
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${MEDICATION_CLASS_COLORS[med.med_class]}`}>
+                            {MEDICATION_CLASS_LABELS[med.med_class]}
+                          </span>
+                        </div>
+                        {med.posology && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">📋 {med.posology}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${RENEWAL_URGENCY_COLORS[urgency]}`}>
+                            {RENEWAL_URGENCY_LABELS[urgency]}
+                          </span>
+                          {dueDate && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {urgency === 'vencido'
+                                ? `Venceu há ${Math.abs(daysRemaining!)} dia(s)`
+                                : `Vence em ${daysRemaining} dia(s)`}
+                              {' · '}
+                              {new Date(dueDate).toLocaleDateString('pt-BR')}
+                            </span>
+                          )}
+                        </div>
+                        {med.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">📝 {med.notes}</p>}
+                      </div>
+
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => setEditingId(med.id)}
+                          className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5"
+                          title="Editar"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleRemove(med.id)}
+                          className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 p-1.5"
+                          title="Remover"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {(urgency === 'atencao' || urgency === 'vencido') && (
+                      <button
+                        onClick={() => handleRenew(med)}
+                        className="mt-3 w-full bg-white dark:bg-gray-800 border border-current text-xs font-semibold py-1.5 rounded-lg hover:bg-opacity-80 transition-colors"
+                      >
+                        ✓ Marcar como renovada hoje
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
       )}
+    </div>
+  )
+}
+
+interface Observation {
+  id: string
+  patient_id: string
+  text: string
+  resolved: boolean
+  created_at: string
+  updated_at: string
+}
+
+function ObservationsSection({ patientId }: { patientId: string }) {
+  const [observations, setObservations] = useState<Observation[]>([])
+  const [loading, setLoading] = useState(true)
+  const [newText, setNewText] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [showResolved, setShowResolved] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const res = await fetch(`/api/patient-observations?patient_id=${patientId}`)
+    if (res.ok) {
+      const data = await res.json()
+      setObservations(data.observations || [])
+    }
+    setLoading(false)
+  }, [patientId])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleAdd() {
+    if (!newText.trim()) return
+    setAdding(true)
+    const res = await fetch('/api/patient-observations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patient_id: patientId, text: newText.trim() }),
+    })
+    setAdding(false)
+    if (res.ok) {
+      setNewText('')
+      await load()
+    }
+  }
+
+  async function toggleResolved(obs: Observation) {
+    setObservations((prev) =>
+      prev.map((o) => o.id === obs.id ? { ...o, resolved: !o.resolved } : o)
+    )
+    await fetch('/api/patient-observations', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: obs.id, resolved: !obs.resolved }),
+    })
+  }
+
+  async function handleRemove(id: string) {
+    if (!confirm('Remover esta observação?')) return
+    await fetch(`/api/patient-observations?id=${id}`, { method: 'DELETE' })
+    setObservations((prev) => prev.filter((o) => o.id !== id))
+  }
+
+  const pending = observations.filter((o) => !o.resolved)
+  const resolved = observations.filter((o) => o.resolved)
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={newText}
+          onChange={(e) => setNewText(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          placeholder="Ex: Precisa de laudo de fralda, Solicitar exame de sangue..."
+          className="flex-1 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700"
+        />
+        <button
+          onClick={handleAdd}
+          disabled={adding || !newText.trim()}
+          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-3 py-2 rounded-lg text-xs font-medium shrink-0"
+        >
+          {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+          Adicionar
+        </button>
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
         </div>
-      ) : sortedMeds.length === 0 ? (
+      ) : pending.length === 0 && resolved.length === 0 ? (
         <div className="text-center py-12 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
-          <Pill className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma medicação controlada cadastrada ainda.</p>
+          <ClipboardList className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-2" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma observação registrada ainda.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Use o campo acima para anotar exames, laudos, ou pendências do paciente.</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {sortedMeds.map((med) => {
-            if (editingId === med.id) {
-              return (
-                <MedicationForm
-                  key={med.id}
-                  patientId={patient.id}
-                  existing={med}
-                  onSaved={() => { setEditingId(null); load() }}
-                  onCancel={() => setEditingId(null)}
-                />
-              )
-            }
-
-            const { urgency, dueDate, daysRemaining } = computeRenewalUrgency(med)
-
-            return (
-              <div key={med.id} className={`rounded-xl border p-4 ${RENEWAL_URGENCY_COLORS[urgency]}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-bold text-gray-800 dark:text-gray-100">{med.name}</p>
-                      {med.dosage && <span className="text-xs text-gray-500 dark:text-gray-400">{med.dosage}</span>}
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${MEDICATION_CLASS_COLORS[med.med_class]}`}>
-                        {MEDICATION_CLASS_LABELS[med.med_class]}
-                      </span>
-                    </div>
-                    {med.posology && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">📋 {med.posology}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${RENEWAL_URGENCY_COLORS[urgency]}`}>
-                        {RENEWAL_URGENCY_LABELS[urgency]}
-                      </span>
-                      {dueDate && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {urgency === 'vencido'
-                            ? `Venceu há ${Math.abs(daysRemaining!)} dia(s)`
-                            : `Vence em ${daysRemaining} dia(s)`}
-                          {' · '}
-                          {new Date(dueDate).toLocaleDateString('pt-BR')}
-                        </span>
-                      )}
-                    </div>
-                    {med.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">📝 {med.notes}</p>}
-                  </div>
-
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <button
-                      onClick={() => setEditingId(med.id)}
-                      className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5"
-                      title="Editar"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleRemove(med.id)}
-                      className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 p-1.5"
-                      title="Remover"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {(urgency === 'atencao' || urgency === 'vencido') && (
+        <>
+          {pending.length > 0 && (
+            <div className="space-y-2">
+              {pending.map((obs) => (
+                <div
+                  key={obs.id}
+                  className="flex items-start gap-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-3 group"
+                >
                   <button
-                    onClick={() => handleRenew(med)}
-                    className="mt-3 w-full bg-white dark:bg-gray-800 border border-current text-xs font-semibold py-1.5 rounded-lg hover:bg-opacity-80 transition-colors"
+                    onClick={() => toggleResolved(obs)}
+                    className="mt-0.5 text-gray-300 hover:text-green-500 dark:text-gray-600 dark:hover:text-green-400 transition-colors shrink-0"
+                    title="Marcar como resolvido"
                   >
-                    ✓ Marcar como renovada hoje
+                    <Circle className="w-4.5 h-4.5" />
                   </button>
-                )}
-              </div>
-            )
-          })}
-        </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-800 dark:text-gray-100">{obs.text}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      {new Date(obs.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleRemove(obs.id)}
+                    className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    title="Remover"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {resolved.length > 0 && (
+            <div>
+              <button
+                onClick={() => setShowResolved(!showResolved)}
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-medium mb-2"
+              >
+                {showResolved ? '▼' : '▶'} {resolved.length} resolvida(s)
+              </button>
+              {showResolved && (
+                <div className="space-y-2">
+                  {resolved.map((obs) => (
+                    <div
+                      key={obs.id}
+                      className="flex items-start gap-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl p-3 group"
+                    >
+                      <button
+                        onClick={() => toggleResolved(obs)}
+                        className="mt-0.5 text-green-500 dark:text-green-400 hover:text-gray-400 transition-colors shrink-0"
+                        title="Desmarcar"
+                      >
+                        <CheckCircle2 className="w-4.5 h-4.5" />
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-400 dark:text-gray-500 line-through">{obs.text}</p>
+                        <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">
+                          {new Date(obs.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleRemove(obs.id)}
+                        className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                        title="Remover"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
