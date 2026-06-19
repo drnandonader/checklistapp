@@ -67,8 +67,12 @@ export async function POST(request: NextRequest) {
       </div>
     `
 
+    // Enquanto o Resend estiver em modo de testes, ele só entrega para o
+    // endereço proprietário da conta. O token continua sendo do usuário
+    // solicitado; apenas o endereço de entrega pode ser sobrescrito.
+    const deliveryEmail = process.env.MAGIC_LINK_DELIVERY_OVERRIDE || profile.email
     const sendResult = await sendReminderEmail(
-      profile.email,
+      deliveryEmail,
       'Seu link de acesso — Checklist Boa Vista II',
       html
     )
