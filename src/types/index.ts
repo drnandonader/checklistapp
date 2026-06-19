@@ -395,3 +395,40 @@ export function computeRenewalUrgency(med: Pick<ControlledMedication, 'prescript
 
   return { urgency, dueDate: dueDate.toISOString(), daysRemaining }
 }
+
+// ─── Mural de Recados (comunicação interna da equipe) ───────────────────
+export type AnnouncementUrgency = 'normal' | 'importante' | 'urgente'
+
+export interface Announcement {
+  id: string
+  ubs_id: string
+  author_id: string
+  title: string
+  body: string
+  urgency: AnnouncementUrgency
+  created_at: string
+}
+
+export interface AnnouncementRead {
+  announcement_id: string
+  profile_id: string
+  read_at: string
+}
+
+export const ANNOUNCEMENT_URGENCY_LABELS: Record<AnnouncementUrgency, string> = {
+  normal: 'Normal',
+  importante: 'Importante',
+  urgente: 'Urgente',
+}
+
+export const ANNOUNCEMENT_URGENCY_COLORS: Record<AnnouncementUrgency, string> = {
+  normal: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
+  importante: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-900',
+  urgente: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900',
+}
+
+export const ANNOUNCEMENT_URGENCY_DOT: Record<AnnouncementUrgency, string> = {
+  normal: 'bg-gray-400',
+  importante: 'bg-yellow-500',
+  urgente: 'bg-red-500',
+}

@@ -12,6 +12,7 @@ import { ChecklistView } from '@/components/ChecklistView'
 import { CoordinationPanel } from '@/components/CoordinationPanel'
 import { FaltososPanel } from '@/components/FaltososPanel'
 import { HealthAgentsPanel } from '@/components/HealthAgentsPanel'
+import { AnnouncementsBoard } from '@/components/AnnouncementsBoard'
 import { WeeklyHomeVisitsPanel } from '@/components/WeeklyHomeVisitsPanel'
 import { PrintReport } from '@/components/PrintReport'
 import { ProgressBar } from '@/components/ProgressBar'
@@ -33,7 +34,7 @@ const PROFESSIONAL_ICON: Record<ProfessionalCategory, string> = {
 }
 
 type Step = 'month' | 'checklist'
-type SubTab = 'checklist' | 'visitas' | 'faltosos' | 'agentes'
+type SubTab = 'checklist' | 'visitas' | 'faltosos' | 'agentes' | 'mural'
 
 export default function HomePage() {
   const { dark, toggle, mounted } = useDarkMode()
@@ -236,6 +237,14 @@ export default function HomePage() {
                 >
                   Agentes de Saúde
                 </button>
+                <button
+                  onClick={() => setSubTab('mural')}
+                  className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors ${
+                    subTab === 'mural' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  Mural de Recados
+                </button>
               </div>
 
               {subTab === 'checklist' && (
@@ -247,6 +256,9 @@ export default function HomePage() {
               )}
               {subTab === 'agentes' && (
                 <HealthAgentsPanel canManageAgents={false} />
+              )}
+              {subTab === 'mural' && (
+                <AnnouncementsBoard currentProfileId={profile.id} />
               )}
             </div>
           )

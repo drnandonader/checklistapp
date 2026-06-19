@@ -16,6 +16,8 @@ import { PrevineScoreboard } from './PrevineScoreboard'
 import { FaltososPanel } from './FaltososPanel'
 import { HealthAgentsPanel } from './HealthAgentsPanel'
 import { WeeklyHomeVisitsPanel } from './WeeklyHomeVisitsPanel'
+import { AnnouncementsBoard } from './AnnouncementsBoard'
+import { useAuth } from '@/lib/useAuth'
 import { Download, Loader2, Lock, Mail, CheckCircle2, X } from 'lucide-react'
 
 interface CoordinationPanelProps {
@@ -44,7 +46,8 @@ export function CoordinationPanel({ month, year }: CoordinationPanelProps) {
   const [alertText, setAlertText] = useState('')
   const [sendingAlert, setSendingAlert] = useState(false)
   const [alertResult, setAlertResult] = useState<string | null>(null)
-  const [tab, setTab] = useState<'geral' | 'visitas' | 'faltosos' | 'agentes'>('geral')
+  const [tab, setTab] = useState<'geral' | 'visitas' | 'faltosos' | 'agentes' | 'mural'>('geral')
+  const { profile: authProfile } = useAuth()
 
   const loadStats = useCallback(async () => {
     setLoading(true)
@@ -188,9 +191,19 @@ export function CoordinationPanel({ month, year }: CoordinationPanelProps) {
         >
           Agentes de Saúde
         </button>
+        <button
+          onClick={() => setTab('mural')}
+          className={`text-sm font-medium px-3 py-2 border-b-2 transition-colors ${
+            tab === 'mural' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          Mural de Recados
+        </button>
       </div>
 
-      {tab === 'visitas' ? (
+      {tab === 'mural' ? (
+        authProfile ? <AnnouncementsBoard currentProfileId={authProfile.id} /> : null
+      ) : tab === 'visitas' ? (
         <WeeklyHomeVisitsPanel />
       ) : tab === 'faltosos' ? (
         <FaltososPanel month={month} year={year} canImport={true} />
