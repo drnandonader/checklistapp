@@ -1,14 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ClipboardList, Mail, Loader2, CheckCircle2 } from 'lucide-react'
+import { ClipboardList, Mail, Loader2 } from 'lucide-react'
 import { EMAIL_KEY } from '@/lib/useAuth'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [autoLogging, setAutoLogging] = useState(false)
-  const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -16,47 +14,30 @@ export default function LoginPage() {
 
     if (authError === 'auto_login_failed') {
       localStorage.removeItem(EMAIL_KEY)
-      setError('Não foi possível entrar automaticamente. Digite seu e-mail abaixo.')
-      return
-    }
-
-    if (authError === 'auth_timeout') {
-      setError('O link demorou demais para ser validado. Solicite um novo link e tente novamente.')
+      setError('E-mail não cadastrado. Verifique com a coordenação.')
       return
     }
 
     if (authError) {
-      setError('O link é inválido, expirou ou já foi utilizado. Solicite um novo link.')
+      setError('Erro ao entrar. Tente novamente.')
       return
     }
 
     const stored = localStorage.getItem(EMAIL_KEY)
     if (stored) {
-      setAutoLogging(true)
+      setLoading(true)
       window.location.href = `/api/auth/silent-login?email=${encodeURIComponent(stored)}`
     }
   }, [])
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
-
-    const response = await fetch('/api/auth/magic-link', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    })
-
-    setLoading(false)
-    if (!response.ok) {
-      setError('Não foi possível enviar o link. Verifique o e-mail e tente novamente.')
-      return
-    }
-    setSent(true)
+    window.location.href = `/api/auth/silent-login?email=${encodeURIComponent(email.trim().toLowerCase())}`
   }
 
-  if (autoLogging) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -83,58 +64,35 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
-          {!sent ? (
-            <>
-              <h2 className="text-sm font-bold text-gray-800 dark:text-white mb-1">Entrar no sistema</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-5">
-                Digite o e-mail cadastrado pela coordenação. Você receberá um link de acesso — sem senha.
-              </p>
+          <h2 className="text-sm font-bold text-gray-800 dark:text-white mb-1">Entrar no sistema</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-5">
+            Digite o e-mail cadastrado pela coordenação.
+          </p>
 
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seuemail@exemplo.com"
-                    className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700"
-                  />
-                </div>
-
-                {error && (
-                  <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {loading ? 'Enviando...' : 'Enviar link de acesso'}
-                </button>
-              </form>
-            </>
-          ) : (
-            <div className="text-center py-2">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-950/40 rounded-full flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-              <h2 className="text-sm font-bold text-gray-800 dark:text-white mb-1">Link enviado!</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Verifique a caixa de entrada de <strong>{email}</strong> e clique no link para entrar.
-                Pode levar alguns instantes — confira também a caixa de spam.
-              </p>
-              <button
-                onClick={() => setSent(false)}
-                className="text-xs text-blue-600 dark:text-blue-400 mt-4 hover:underline"
-              >
-                Usar outro e-mail
-              </button>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seuemail@exemplo.com"
+                className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-700"
+              />
             </div>
-          )}
+
+            {error && (
+              <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors"
+            >
+              Entrar
+            </button>
+          </form>
         </div>
 
         <p className="text-xs text-gray-400 dark:text-gray-600 text-center mt-5">
