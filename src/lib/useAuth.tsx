@@ -1,12 +1,11 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabaseClient'
 import { ProfessionalCategory } from '@/types'
 
-const SESSION_KEY = 'checklist_session_start'
-const SESSION_DURATION_MS = 8 * 60 * 60 * 1000 // 8 horas
+export const EMAIL_KEY = 'checklist_email'
 
 interface AuthProfile {
   id: string
@@ -24,58 +23,28 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function isSessionExpired(): boolean {
-  const start = localStorage.getItem(SESSION_KEY)
-  if (!start) return false
-  return Date.now() - Number(start) > SESSION_DURATION_MS
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<AuthProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
 
   const logout = useCallback(async () => {
     const supabase = createSupabaseBrowserClient()
     await supabase.auth.signOut()
-    localStorage.removeItem(SESSION_KEY)
+    localStorage.removeItem(EMAIL_KEY)
     setProfile(null)
     router.push('/login')
   }, [router])
 
-  const scheduleAutoLogout = useCallback(() => {
-    if (timerRef.current) clearTimeout(timerRef.current)
-    const start = localStorage.getItem(SESSION_KEY)
-    if (!start) return
-    const remaining = SESSION_DURATION_MS - (Date.now() - Number(start))
-    if (remaining <= 0) {
-      logout()
-      return
-    }
-    timerRef.current = setTimeout(() => logout(), remaining)
-  }, [logout])
-
   const loadProfile = useCallback(async () => {
-    if (isSessionExpired()) {
-      await logout()
-      return
-    }
-
     const supabase = createSupabaseBrowserClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      localStorage.removeItem(SESSION_KEY)
       setProfile(null)
       setLoading(false)
       return
     }
-
-    if (!localStorage.getItem(SESSION_KEY)) {
-      localStorage.setItem(SESSION_KEY, String(Date.now()))
-    }
-    scheduleAutoLogout()
 
     const { data } = await supabase
       .from('profiles')
@@ -84,20 +53,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle()
 
     if (data) {
+      localStorage.setItem(EMAIL_KEY, (data as AuthProfile).email)
       setProfile(data as AuthProfile)
       setLoading(false)
       return
     }
 
-    const provisionResponse = await fetch('/api/auth/profile', { method: 'POST' })
-    if (provisionResponse.ok) {
-      const provisionedProfile = await provisionResponse.json()
-      setProfile(provisionedProfile as AuthProfile)
+    const res = await fetch('/api/auth/profile', { method: 'POST' })
+    if (res.ok) {
+      const provisioned = await res.json() as AuthProfile
+      localStorage.setItem(EMAIL_KEY, provisioned.email)
+      setProfile(provisioned)
     } else {
       setProfile(null)
     }
     setLoading(false)
-  }, [logout, scheduleAutoLogout])
+  }, [])
 
   useEffect(() => {
     loadProfile()
@@ -105,30 +76,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createSupabaseBrowserClient()
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
-        localStorage.removeItem(SESSION_KEY)
+        localStorage.removeItem(EMAIL_KEY)
         setProfile(null)
         return
       }
       if (event === 'SIGNED_IN') {
-        if (!localStorage.getItem(SESSION_KEY)) {
-          localStorage.setItem(SESSION_KEY, String(Date.now()))
-        }
         setTimeout(() => void loadProfile(), 0)
-        return
-      }
-      // TOKEN_REFRESHED: só reagendar o timer, sem recarregar o perfil
-      if (isSessionExpired()) {
-        logout()
-      } else {
-        scheduleAutoLogout()
       }
     })
 
-    return () => {
-      listener.subscription.unsubscribe()
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [loadProfile, logout, scheduleAutoLogout])
+    return () => listener.subscription.unsubscribe()
+  }, [loadProfile])
 
   return (
     <AuthContext.Provider value={{ profile, loading, logout, refresh: loadProfile }}>

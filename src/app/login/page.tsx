@@ -2,19 +2,38 @@
 
 import { useEffect, useState } from 'react'
 import { ClipboardList, Mail, Loader2, CheckCircle2 } from 'lucide-react'
+import { EMAIL_KEY } from '@/lib/useAuth'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const [autoLogging, setAutoLogging] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const authError = new URLSearchParams(window.location.search).get('error')
+
+    if (authError === 'auto_login_failed') {
+      localStorage.removeItem(EMAIL_KEY)
+      setError('Não foi possível entrar automaticamente. Digite seu e-mail abaixo.')
+      return
+    }
+
     if (authError === 'auth_timeout') {
       setError('O link demorou demais para ser validado. Solicite um novo link e tente novamente.')
-    } else if (authError) {
+      return
+    }
+
+    if (authError) {
       setError('O link é inválido, expirou ou já foi utilizado. Solicite um novo link.')
+      return
+    }
+
+    const stored = localStorage.getItem(EMAIL_KEY)
+    if (stored) {
+      setAutoLogging(true)
+      window.location.href = `/api/auth/silent-login?email=${encodeURIComponent(stored)}`
     }
   }, [])
 
@@ -35,6 +54,17 @@ export default function LoginPage() {
       return
     }
     setSent(true)
+  }
+
+  if (autoLogging) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Entrando...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
