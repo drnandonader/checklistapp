@@ -361,7 +361,7 @@ export const RENEWAL_URGENCY_COLORS: Record<RenewalUrgency, string> = {
 }
 
 // Janela de alerta antes do vencimento (dias) — configurável aqui se precisar ajustar
-export const RENEWAL_ALERT_WINDOW_DAYS = 10
+export const RENEWAL_ALERT_WINDOW_DAYS = 7
 
 // Calcula a data efetiva de vencimento da receita: usa prescription_end_date
 // se disponível; senão, soma duration_days a partir de last_renewed_at;

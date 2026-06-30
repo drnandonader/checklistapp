@@ -21,6 +21,7 @@ import { getItemsByProfessional } from '@/data/checklist'
 import { useDarkMode } from '@/lib/useDarkMode'
 import { useAuth } from '@/lib/useAuth'
 import { ArrowLeft, ClipboardList, Activity, Moon, Sun, Printer, LogOut, Loader2 } from 'lucide-react'
+import { MedicationAlertBanner } from '@/components/MedicationAlertBanner'
 
 const CURRENT_YEAR = new Date().getFullYear()
 const CURRENT_MONTH = new Date().getMonth() + 1
@@ -140,6 +141,15 @@ export default function HomePage() {
       <main className="max-w-2xl mx-auto px-4 py-6">
         {step === 'month' && (
           <div className="space-y-6">
+            {['acs', 'medico', 'coordenacao'].includes(profile.professional) && (
+              <MedicationAlertBanner
+                onGoToAgents={() => {
+                  setStep('checklist')
+                  setSubTab('agentes')
+                }}
+              />
+            )}
+
             <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-6 text-white">
               <div className="flex items-center gap-2 mb-2">
                 <Activity className="w-5 h-5 opacity-80" />
