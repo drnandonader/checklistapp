@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { computeRenewalUrgency } from '@/types'
+import { computeRenewalUrgency, MedicationClass } from '@/types'
 
 export async function GET() {
   const supabase = createSupabaseServerClient()
@@ -18,12 +18,6 @@ export async function GET() {
 
   if (!profile?.active) return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
 
-  const allowed = ['acs', 'medico', 'coordenacao', 'enfermeira', 'tecnico']
-  if (!allowed.includes(profile.professional)) {
-    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
-  }
-
-  // Busca todos pacientes da UBS com seus agentes e medicações ativas
   const { data: patients, error } = await admin
     .from('agent_patients')
     .select(`
@@ -31,7 +25,7 @@ export async function GET() {
       name,
       agent_id,
       health_agents!inner ( id, name, ubs_id ),
-      controlled_medications ( id, name, prescription_end_date, duration_days, last_renewed_at, active )
+      controlled_medications ( id, name, dosage, med_class, prescription_end_date, duration_days, last_renewed_at, active )
     `)
     .eq('health_agents.ubs_id', profile.ubs_id)
     .eq('active', true)
@@ -45,20 +39,21 @@ export async function GET() {
     agent_name: string
     med_id: string
     med_name: string
+    med_dosage: string
+    med_class: MedicationClass
     days_remaining: number
     due_date: string
     is_expired: boolean
   }[] = []
 
   for (const patient of patients || []) {
-    const agent = Array.isArray(patient.health_agents) ? patient.health_agents[0] : patient.health_agents
+    const agent = Array.isArray(patient.health_agents)
+      ? patient.health_agents[0]
+      : patient.health_agents
     const meds = (patient.controlled_medications as Array<{
-      id: string
-      name: string
-      prescription_end_date?: string
-      duration_days?: number
-      last_renewed_at?: string
-      active: boolean
+      id: string; name: string; dosage?: string; med_class: MedicationClass
+      prescription_end_date?: string; duration_days?: number
+      last_renewed_at?: string; active: boolean
     }>).filter((m) => m.active)
 
     for (const med of meds) {
@@ -71,6 +66,8 @@ export async function GET() {
           agent_name: agent?.name ?? '',
           med_id: med.id,
           med_name: med.name,
+          med_dosage: med.dosage ?? '',
+          med_class: med.med_class,
           days_remaining: daysRemaining ?? 0,
           due_date: dueDate ?? '',
           is_expired: urgency === 'vencido',
@@ -79,7 +76,6 @@ export async function GET() {
     }
   }
 
-  // Ordena: vencidas primeiro, depois por dias restantes crescente
   alerts.sort((a, b) => {
     if (a.is_expired !== b.is_expired) return a.is_expired ? -1 : 1
     return a.days_remaining - b.days_remaining

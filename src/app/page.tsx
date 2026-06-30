@@ -13,6 +13,8 @@ import { CoordinationPanel } from '@/components/CoordinationPanel'
 import { FaltososPanel } from '@/components/FaltososPanel'
 import { HealthAgentsPanel } from '@/components/HealthAgentsPanel'
 import { AnnouncementsBoard } from '@/components/AnnouncementsBoard'
+import { MedRenovationView } from '@/components/MedRenovationView'
+import { MobileAgentsView } from '@/components/MobileAgentsView'
 import { WeeklyHomeVisitsPanel } from '@/components/WeeklyHomeVisitsPanel'
 import { PrintReport } from '@/components/PrintReport'
 import { ProgressBar } from '@/components/ProgressBar'
@@ -35,7 +37,7 @@ const PROFESSIONAL_ICON: Record<ProfessionalCategory, string> = {
 }
 
 type Step = 'month' | 'checklist'
-type SubTab = 'checklist' | 'visitas' | 'faltosos' | 'agentes' | 'mural'
+type SubTab = 'checklist' | 'visitas' | 'faltosos' | 'agentes' | 'mural' | 'receitas'
 
 export default function HomePage() {
   const { dark, toggle, mounted } = useDarkMode()
@@ -247,6 +249,16 @@ export default function HomePage() {
                 >
                   Agentes de Saúde
                 </button>
+                {(profile.professional === 'medico' || profile.professional === 'coordenacao') && (
+                  <button
+                    onClick={() => setSubTab('receitas')}
+                    className={`text-sm font-medium px-3 py-2.5 border-b-2 transition-colors whitespace-nowrap ${
+                      subTab === 'receitas' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    Receitas
+                  </button>
+                )}
                 <button
                   onClick={() => setSubTab('mural')}
                   className={`text-sm font-medium px-3 py-2.5 border-b-2 transition-colors whitespace-nowrap ${
@@ -265,8 +277,11 @@ export default function HomePage() {
                 <FaltososPanel month={selectedMonth} year={selectedYear} canImport={false} />
               )}
               {subTab === 'agentes' && (
-                <HealthAgentsPanel canManageAgents={false} />
+                profile.professional === 'acs'
+                  ? <MobileAgentsView />
+                  : <HealthAgentsPanel canManageAgents={false} />
               )}
+              {subTab === 'receitas' && <MedRenovationView />}
               {subTab === 'mural' && (
                 <AnnouncementsBoard currentProfileId={profile.id} />
               )}
